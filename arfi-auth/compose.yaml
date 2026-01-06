@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: 'postgres:15-alpine'
+    container_name: arfi_auth_db_container
+    environment:
+      - 'POSTGRES_DB=arfi_auth'
+      - 'POSTGRES_PASSWORD=password123'
+      - 'POSTGRES_USER=arfi_user'
+    ports:
+      - '5432:5432'  # IMPORTANT: This locks the port to 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - arfi-network
+
+volumes:
+  postgres_data:
+
+networks:
+  arfi-network:
+    driver: bridge
