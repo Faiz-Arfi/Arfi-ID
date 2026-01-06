@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>dev.faizarfi</groupId>
-    <artifactId>arfi-auth</artifactId>
+    <artifactId>backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>arfi-auth</name>
     <description>arfi-auth</description>
