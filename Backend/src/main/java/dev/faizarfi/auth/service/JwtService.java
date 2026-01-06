@@ -33,8 +33,10 @@ public class JwtService {
     }
 
     // Generate Refresh Token (Long Lived)
-    public String generateRefreshToken(String username) {
-        return buildToken(new HashMap<>(), username, refreshExpiration);
+    public String generateRefreshToken(String username, String clientId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("client_id", clientId);
+        return buildToken(claims, username, refreshExpiration);
     }
 
     // Extract Username (Email) for JWT Token

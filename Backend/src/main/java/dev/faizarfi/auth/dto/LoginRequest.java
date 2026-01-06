@@ -19,4 +19,7 @@ public class LoginRequest {
 
     @NotBlank(message = "Password is required")
     private String password;
+
+    @NotBlank(message = "Client ID is required")
+    private String clientId;
 }
