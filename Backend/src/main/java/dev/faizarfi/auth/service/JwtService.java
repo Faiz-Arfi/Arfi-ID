@@ -28,8 +28,10 @@ public class JwtService {
     private long refreshExpiration;
 
     // Generate Access Token (Short Lived)
-    public String generateAccessToken(String username) {
-        return buildToken(new HashMap<>(), username, accessExpiration);
+    public String generateAccessToken(String username, String clientId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("client_id", clientId);
+        return buildToken(claims, username, accessExpiration);
     }
 
     // Generate Refresh Token (Long Lived)

@@ -54,9 +54,10 @@ public class AuthService {
         );
 
         // generate tokens
-        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String accessToken = jwtService.generateAccessToken(request.getEmail());
+        String accessToken = jwtService.generateAccessToken(request.getEmail(), request.getClientId());
         String refreshToken = jwtService.generateRefreshToken(request.getEmail(), request.getClientId());
 
         // Save refresh token to database
@@ -81,6 +82,41 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+    }
+
+    public AuthResponse refreshToken(String refreshToken) {
+
+        // Extract email from token
+        String email =  jwtService.extractUsername(refreshToken);
+
+        // Check db if this token is valid and not revoked
+        RefreshToken tokenEntity = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new RuntimeException("Token not found"));
+
+        if (tokenEntity.isRevoked()) {
+            throw new RuntimeException("Token has been revoked");
+        }
+
+        if(tokenEntity.getExpiryDate().isBefore(Instant.now())) {
+            throw new RuntimeException("Token has expired");
+        }
+
+        // Generate new access token
+        User user = tokenEntity.getUser();
+        Client client = tokenEntity.getClient();
+        String newAccessToken = jwtService.generateAccessToken(user.getEmail(), client.getClientId());
+
+        return new AuthResponse(newAccessToken, refreshToken);
+    }
+
+    public void logout(String refreshToken) {
+        var tokenEntity = refreshTokenRepository.findByToken(refreshToken)
+                .orElse(null);
+
+        if(tokenEntity != null) {
+            tokenEntity.setRevoked(true);
+            refreshTokenRepository.save(tokenEntity);
+        }
     }
 
     private void saveUserToken(User user, Client client, String token) {

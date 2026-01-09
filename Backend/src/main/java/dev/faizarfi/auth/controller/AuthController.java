@@ -4,9 +4,10 @@ import dev.faizarfi.auth.dto.AuthResponse;
 import dev.faizarfi.auth.dto.LoginRequest;
 import dev.faizarfi.auth.dto.RegisterRequest;
 import dev.faizarfi.auth.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Arrays;
 
 @RestController
 @RequestMapping("/auth")
@@ -23,7 +26,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody @Valid LoginRequest request) {
+    public ResponseEntity<Void> login(@RequestBody @Valid LoginRequest request) {
         AuthResponse response = authService.login(request);
 
         // return cookies in response
@@ -44,12 +47,67 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                .body(response);
+                .build();
     }
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody @Valid RegisterRequest request) {
         authService.register(request);
         return ResponseEntity.ok("User registered successfully.");
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<Void> refreshToken(HttpServletRequest request) {
+        // Extract Refresh Token form Cookie
+        String refreshToken = Arrays.stream(request.getCookies())
+                .filter(c -> "refreshToken".equals(c.getName()))
+                .findFirst()
+                .map(Cookie::getValue)
+                .orElseThrow(() -> new RuntimeException("Refresh Token not found"));
+
+        // Process Refresh
+        AuthResponse response = authService.refreshToken(refreshToken);
+
+        // Issue New Access Cookie
+        ResponseCookie accessCookie = ResponseCookie.from("accessToken", response.getAccessToken())
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(60 * 15)
+                .sameSite("Strict")
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .build();
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout (HttpServletRequest request) {
+        // Extract Token
+        String refreshToken = Arrays.stream(request.getCookies())
+                .filter(c -> "refreshToken".equals(c.getName()))
+                .findFirst()
+                .map(Cookie::getValue)
+                .orElse(null);
+
+        if(refreshToken != null) {
+            authService.logout(refreshToken);
+        }
+
+        // Clear Cookies
+        ResponseCookie accessCookie = ResponseCookie.from("accessToken", "")
+                .path("/")
+                .maxAge(0)
+                .build();
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body("Logged out successfully.");
     }
 }
