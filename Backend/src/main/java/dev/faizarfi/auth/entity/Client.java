@@ -3,12 +3,14 @@ package dev.faizarfi.auth.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "clients")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -16,7 +18,7 @@ import lombok.NoArgsConstructor;
 public class Client {
 
     @Id
-    @Column(nullable = false, unique = true)
+    @Column(name = "client_id", nullable = false, unique = true)
     private String clientId;
 
     @Column(nullable = false)
