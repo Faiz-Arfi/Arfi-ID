@@ -28,9 +28,10 @@ public class JwtService {
     private long refreshExpiration;
 
     // Generate Access Token (Short Lived)
-    public String generateAccessToken(String username, String clientId) {
+    public String generateAccessToken(String username, String clientId, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("client_id", clientId);
+        claims.put("role", role);
         return buildToken(claims, username, accessExpiration);
     }
 
@@ -39,6 +40,10 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("client_id", clientId);
         return buildToken(claims, username, refreshExpiration);
+    }
+
+    public String extractRole(String token) {
+        return extractClaim(token, claims -> claims.get("role", String.class));
     }
 
     // Extract Username (Email) for JWT Token

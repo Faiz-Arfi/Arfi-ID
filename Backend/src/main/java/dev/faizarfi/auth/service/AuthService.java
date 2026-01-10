@@ -6,9 +6,11 @@ import dev.faizarfi.auth.dto.RegisterRequest;
 import dev.faizarfi.auth.entity.Client;
 import dev.faizarfi.auth.entity.RefreshToken;
 import dev.faizarfi.auth.entity.User;
+import dev.faizarfi.auth.entity.UserRole;
 import dev.faizarfi.auth.repository.ClientRepository;
 import dev.faizarfi.auth.repository.RefreshTokenRepository;
 import dev.faizarfi.auth.repository.UserRepository;
+import dev.faizarfi.auth.repository.UserRoleRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,17 +28,19 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final ClientRepository clientRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRoleRepository userRoleRepository;
 
     @Value("${jwt.refresh-expiration:604800000}")
     private Long refreshTokenValidity;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager, ClientRepository clientRepository, RefreshTokenRepository refreshTokenRepository) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager, ClientRepository clientRepository, RefreshTokenRepository refreshTokenRepository, UserRoleRepository userRoleRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.clientRepository = clientRepository;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.userRoleRepository = userRoleRepository;
     }
 
     public AuthResponse login (LoginRequest request) {
@@ -57,7 +61,12 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String accessToken = jwtService.generateAccessToken(request.getEmail(), request.getClientId());
+        // Fetch Role for this user and client
+        String actualRole = userRoleRepository.findByUserAndClient(user, client)
+                .map(UserRole::getRole)
+                .orElse("ROLE_GUEST"); // if no role found, default to guest
+
+        String accessToken = jwtService.generateAccessToken(request.getEmail(), request.getClientId(), actualRole);
         String refreshToken = jwtService.generateRefreshToken(request.getEmail(), request.getClientId());
 
         // Save refresh token to database
@@ -72,16 +81,29 @@ public class AuthService {
             throw new RuntimeException("Email already in use");
         }
 
+        // Resolve Client (Default to "arfi-web-local" if not provided)
+        Client client = clientRepository.findByClientId("arfi-web-local")
+                .orElseThrow(() -> new RuntimeException("Default client not found"));
+
         String hashedPassword = passwordEncoder.encode(request.getPassword());
 
         User user = User.builder()
                 .email(request.getEmail())
                 .password(hashedPassword)
-                .role("ROLE_USER")
+                .role("ROLE_USER") // Global System Role
                 .isEnabled(true)
                 .build();
 
         userRepository.save(user);
+
+        // Assign context role
+        UserRole projectRole = UserRole.builder()
+                .user(user)
+                .client(client)
+                .role("ROLE_USER")
+                .build();
+
+        userRoleRepository.save(projectRole);
     }
 
     public AuthResponse refreshToken(String refreshToken) {
@@ -104,7 +126,10 @@ public class AuthService {
         // Generate new access token
         User user = tokenEntity.getUser();
         Client client = tokenEntity.getClient();
-        String newAccessToken = jwtService.generateAccessToken(user.getEmail(), client.getClientId());
+        String actualRole = userRoleRepository.findByUserAndClient(user, client)
+                .map(UserRole::getRole)
+                .orElse("ROLE_GUEST"); // if no role found, default to guest
+        String newAccessToken = jwtService.generateAccessToken(user.getEmail(), client.getClientId(), actualRole);
 
         return new AuthResponse(newAccessToken, refreshToken);
     }
