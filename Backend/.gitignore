@@ -5,7 +5,7 @@ target/
 !**/src/test/**/target/
 
 # all environment files
-.env
+*.env
 
 ### STS ###
 .apt_generated
