@@ -11,6 +11,7 @@ import dev.faizarfi.auth.repository.ClientRepository;
 import dev.faizarfi.auth.repository.RefreshTokenRepository;
 import dev.faizarfi.auth.repository.UserRepository;
 import dev.faizarfi.auth.repository.UserRoleRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -43,7 +44,7 @@ public class AuthService {
         this.userRoleRepository = userRoleRepository;
     }
 
-    public AuthResponse login (LoginRequest request) {
+    public AuthResponse login (LoginRequest request, HttpServletRequest httpRequest) {
         // validate client ID
         Client client = clientRepository.findByClientId(request.getClientId())
                 .orElseThrow(() -> new RuntimeException("Invalid Client ID"));
@@ -70,7 +71,7 @@ public class AuthService {
         String refreshToken = jwtService.generateRefreshToken(request.getEmail(), request.getClientId());
 
         // Save refresh token to database
-        saveUserToken(user, client, refreshToken);
+        saveUserToken(user, client, refreshToken, httpRequest);
 
         // return cookies in response
         return new AuthResponse(accessToken, refreshToken);
@@ -151,6 +152,19 @@ public class AuthService {
                 .client(client)
                 .revoked(false)
                 .expiryDate(Instant.now().plusMillis(refreshTokenValidity))
+                .build();
+        refreshTokenRepository.save(refreshToken);
+    }
+
+    private void saveUserToken(User user, Client client, String token, HttpServletRequest request) {
+        RefreshToken refreshToken = RefreshToken.builder()
+                .user(user)
+                .client(client)
+                .token(token)
+                .revoked(false)
+                .expiryDate(Instant.now().plusMillis(refreshTokenValidity))
+                .deviceInfo(request.getHeader("User-Agent"))
+                .ipAddress(request.getRemoteAddr())
                 .build();
         refreshTokenRepository.save(refreshToken);
     }

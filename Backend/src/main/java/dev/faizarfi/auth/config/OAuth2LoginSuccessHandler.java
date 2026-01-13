@@ -89,6 +89,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 .client(client)
                 .revoked(false)
                 .expiryDate(Instant.now().plusMillis(refreshTokenValidity))
+                .ipAddress(request.getRemoteAddr())
+                .deviceInfo(request.getHeader("User-Agent"))
                 .build();
         refreshTokenRepository.save(tokenEntity);
 
