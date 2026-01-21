@@ -11,14 +11,20 @@ import dev.faizarfi.auth.repository.ClientRepository;
 import dev.faizarfi.auth.repository.RefreshTokenRepository;
 import dev.faizarfi.auth.repository.UserRepository;
 import dev.faizarfi.auth.repository.UserRoleRepository;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Arrays;
 
 @Service
 public class AuthService {
@@ -30,11 +36,12 @@ public class AuthService {
     private final ClientRepository clientRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRoleRepository userRoleRepository;
+    private final UserDetailsService userDetailsService;
 
     @Value("${jwt.refresh-expiration:604800000}")
     private Long refreshTokenValidity;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager, ClientRepository clientRepository, RefreshTokenRepository refreshTokenRepository, UserRoleRepository userRoleRepository) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager, ClientRepository clientRepository, RefreshTokenRepository refreshTokenRepository, UserRoleRepository userRoleRepository, UserDetailsService userDetailsService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -42,6 +49,7 @@ public class AuthService {
         this.clientRepository = clientRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRoleRepository = userRoleRepository;
+        this.userDetailsService = userDetailsService;
     }
 
     public AuthResponse login (LoginRequest request, HttpServletRequest httpRequest) {
@@ -167,5 +175,34 @@ public class AuthService {
                 .ipAddress(request.getRemoteAddr())
                 .build();
         refreshTokenRepository.save(refreshToken);
+    }
+
+    public ResponseEntity<String> getCurrentUser(HttpServletRequest request) {
+        String token;
+        try {
+            token = getTokenFromCookie(request, true);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).body(null);
+        }
+
+        String email = jwtService.extractUsername(token);
+        if (email == null) return ResponseEntity.status(401).body(null);
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) return ResponseEntity.status(401).body(null);
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        if(!jwtService.isTokenValid(token, userDetails)) return ResponseEntity.status(401).body(null);
+
+        return ResponseEntity.ok(email);
+    }
+
+    private String getTokenFromCookie(HttpServletRequest request, boolean isAccessTokenRequired) {
+        String cookieName = isAccessTokenRequired ? "accessToken" : "refreshToken";
+        return Arrays.stream(request.getCookies())
+                .filter(cookie -> cookie.getName().equals(cookieName))
+                .findFirst()
+                .map(Cookie::getValue)
+                .orElseThrow(() -> new RuntimeException("Access Token not found"));
     }
 }
