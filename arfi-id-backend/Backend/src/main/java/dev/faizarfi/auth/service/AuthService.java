@@ -3,6 +3,7 @@ package dev.faizarfi.auth.service;
 import dev.faizarfi.auth.dto.AuthResponse;
 import dev.faizarfi.auth.dto.LoginRequest;
 import dev.faizarfi.auth.dto.RegisterRequest;
+import dev.faizarfi.auth.dto.UserResponseDto;
 import dev.faizarfi.auth.entity.Client;
 import dev.faizarfi.auth.entity.RefreshToken;
 import dev.faizarfi.auth.entity.User;
@@ -13,7 +14,6 @@ import dev.faizarfi.auth.repository.UserRepository;
 import dev.faizarfi.auth.repository.UserRoleRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -82,7 +82,14 @@ public class AuthService {
         saveUserToken(user, client, refreshToken, httpRequest);
 
         // return cookies in response
-        return new AuthResponse(accessToken, refreshToken);
+        AuthResponse authResponse = AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .userId(user.getId())
+                .role(actualRole)
+                .email(user.getEmail())
+                .build();
+        return authResponse;
     }
 
     public void register(RegisterRequest request) {
@@ -140,7 +147,11 @@ public class AuthService {
                 .orElse("ROLE_GUEST"); // if no role found, default to guest
         String newAccessToken = jwtService.generateAccessToken(user.getEmail(), client.getClientId(), actualRole);
 
-        return new AuthResponse(newAccessToken, refreshToken);
+        AuthResponse response = AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken)
+                .build();
+        return response;
     }
 
     public void logout(String refreshToken) {
@@ -177,7 +188,7 @@ public class AuthService {
         refreshTokenRepository.save(refreshToken);
     }
 
-    public ResponseEntity<String> getCurrentUser(HttpServletRequest request) {
+    public ResponseEntity<UserResponseDto> getCurrentUser(HttpServletRequest request) {
         String token;
         try {
             token = getTokenFromCookie(request, true);
@@ -194,7 +205,11 @@ public class AuthService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
         if(!jwtService.isTokenValid(token, userDetails)) return ResponseEntity.status(401).body(null);
 
-        return ResponseEntity.ok(email);
+        return ResponseEntity.ok().body(UserResponseDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .role(jwtService.extractRole(token))
+                .build());
     }
 
     private String getTokenFromCookie(HttpServletRequest request, boolean isAccessTokenRequired) {

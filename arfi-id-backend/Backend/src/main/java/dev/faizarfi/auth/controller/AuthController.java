@@ -3,6 +3,7 @@ package dev.faizarfi.auth.controller;
 import dev.faizarfi.auth.dto.AuthResponse;
 import dev.faizarfi.auth.dto.LoginRequest;
 import dev.faizarfi.auth.dto.RegisterRequest;
+import dev.faizarfi.auth.dto.UserResponseDto;
 import dev.faizarfi.auth.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,8 +24,8 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<Void> login(@RequestBody @Valid LoginRequest request,
-                                      HttpServletRequest httpRequest) {
+    public ResponseEntity<UserResponseDto> login(@RequestBody @Valid LoginRequest request,
+                                                 HttpServletRequest httpRequest) {
         AuthResponse response = authService.login(request, httpRequest);
 
         // return cookies in response
@@ -42,10 +43,15 @@ public class AuthController {
                 .maxAge(60 * 60 * 24 * 30) // 7 days
                 .sameSite("Strict")
                 .build();
+        UserResponseDto userResponse = UserResponseDto.builder()
+                .id(response.getUserId())
+                .email(response.getEmail())
+                .role(response.getRole())
+                .build();
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                .build();
+                .body(userResponse);
     }
 
     @PostMapping("/register")
@@ -110,7 +116,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<String> getCurrentUser(HttpServletRequest request) {
+    public ResponseEntity<UserResponseDto> getCurrentUser(HttpServletRequest request) {
         return authService.getCurrentUser(request);
     }
 }
