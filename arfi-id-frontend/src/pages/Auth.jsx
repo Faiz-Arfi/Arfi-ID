@@ -1,18 +1,38 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../components/auth/AuthContext'
 import LoginForm from '../components/auth/LoginForm'
 import RegisterForm from '../components/auth/RegisterForm'
 import ForgotPasswordForm from '../components/auth/ForgotPasswordForm'
+import AuthCheckSpinner from '../components/auth/AuthCheckSpinner'
 
 const Auth = () => {
-
+  const { user, isLoading, login } = useAuth();
   const [mode, setMode] = useState('login');
   const navigate = useNavigate();
 
-  const handleLogin = (data) => {
-    console.log('Login data:', data);
-    navigate('/dashboard');
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, isLoading, navigate]);
+
+  if (isLoading) {
+    return <AuthCheckSpinner />;
+  }
+
+  // If we have a user, don't render the form (the useEffect will handle the redirect)
+  if (user) return null;
+
+  const handleLogin = async (credentials) => {
+    try {
+      await login(credentials);
+      navigate('/dashboard');
+    } catch (error) {
+      throw error; // Re-throw so LoginForm can handle it
+    }
   };
+  
   const handleRegister = (data) => {
     console.log('Register data:', data);
     navigate('/dashboard');

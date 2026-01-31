@@ -11,17 +11,22 @@ const LoginForm = ({
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e) => {
-        // wait 5sec
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
-        setTimeout(() => {
-            onLogin({ email, password });
+
+        try {
+            const clientId = import.meta.env.VITE_CLIENT_ID;
+            await onLogin({ email, password, clientId });
+        } catch (error) {
+            alert('Login failed. Please check your credentials and try again.');
+        } finally {
             setIsLoading(false);
-        }, 5000);
+        }
     };
     const handleOAuthLogin = (provider) => () => {
         console.log(`Logging in with ${provider}`);
+        alert(`OAuth login with ${provider} is not implemented yet.`);
     };
 
     return (
