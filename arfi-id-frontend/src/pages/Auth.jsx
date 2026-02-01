@@ -7,7 +7,7 @@ import ForgotPasswordForm from '../components/auth/ForgotPasswordForm'
 import AuthCheckSpinner from '../components/auth/AuthCheckSpinner'
 
 const Auth = () => {
-  const { user, isLoading, login } = useAuth();
+  const { user, isLoading, login, register } = useAuth();
   const [mode, setMode] = useState('login');
   const navigate = useNavigate();
 
@@ -33,9 +33,15 @@ const Auth = () => {
     }
   };
   
-  const handleRegister = (data) => {
-    console.log('Register data:', data);
-    navigate('/dashboard');
+  const handleRegister = async (data) => {
+    try {
+      await register(data);
+      alert('Registration successful! Please log in.');
+      setMode('login');
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error; // Re-throw so RegisterForm can handle it
+    }
   };
 
   return (

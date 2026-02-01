@@ -5,6 +5,7 @@ const RegisterForm = ({ onRegister, onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    clientId: import.meta.env.VITE_CLIENT_ID,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -18,10 +19,13 @@ const RegisterForm = ({ onRegister, onSwitchToLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      onRegister({ ...formData });
+    try {
+      await onRegister(formData);
+    } catch (error) {
+      alert('Registration failed. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 5000);
+    }
   };
 
   return (
