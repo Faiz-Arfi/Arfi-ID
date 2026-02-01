@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
+import PasswordStrength from './PasswordStrength';
 
 const RegisterForm = ({ onRegister, onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
@@ -9,6 +10,7 @@ const RegisterForm = ({ onRegister, onSwitchToLogin }) => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPasswordValid, setIsPasswordValid] = useState(false);
 
   const updateForm = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -85,13 +87,18 @@ const RegisterForm = ({ onRegister, onSwitchToLogin }) => {
               {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
           </div>
+          
+          <PasswordStrength
+            password={formData.password}
+            onValidityChange={setIsPasswordValid}
+          />
 
         </div>
 
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={isLoading || !isValidEmail}
+          disabled={isLoading || !isValidEmail || !isPasswordValid}
           className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base py-2.5 sm:py-3"
         >
           {isLoading ? (
