@@ -8,6 +8,9 @@ import dev.faizarfi.auth.entity.Client;
 import dev.faizarfi.auth.entity.RefreshToken;
 import dev.faizarfi.auth.entity.User;
 import dev.faizarfi.auth.entity.UserRole;
+import dev.faizarfi.auth.exception.AccountDisabledException;
+import dev.faizarfi.auth.exception.InvalidClientException;
+import dev.faizarfi.auth.exception.ResourceAlreadyExistsException;
 import dev.faizarfi.auth.repository.ClientRepository;
 import dev.faizarfi.auth.repository.RefreshTokenRepository;
 import dev.faizarfi.auth.repository.UserRepository;
@@ -20,6 +23,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -55,20 +59,21 @@ public class AuthService {
     public AuthResponse login (LoginRequest request, HttpServletRequest httpRequest) {
         // validate client ID
         Client client = clientRepository.findByClientId(request.getClientId())
-                .orElseThrow(() -> new RuntimeException("Invalid Client ID"));
+                .orElseThrow(() -> new InvalidClientException("Invalid Client ID: " + request.getClientId()));
 
         if(!client.isActive()) {
-            throw new RuntimeException("Client is disabled");
+            throw new AccountDisabledException("This client is disabled or suspended.");
         }
 
         // authenticate user
+        // authenticationManager throws BadCredentialsException automatically if credentials are invalid
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
         // generate tokens
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + request.getEmail()));
 
         // Fetch Role for this user and client
         String actualRole = userRoleRepository.findByUserAndClient(user, client)
@@ -94,7 +99,7 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
         if(userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already in use");
+            throw new ResourceAlreadyExistsException("The email '" + request.getEmail() + "' is already registered.");
         }
 
         // Resolve Client (Default to "arfi-web-local" if not provided)

@@ -1,9 +1,11 @@
 package dev.faizarfi.auth.controller;
 
+import com.nimbusds.oauth2.sdk.auth.verifier.InvalidClientException;
 import dev.faizarfi.auth.dto.AuthResponse;
 import dev.faizarfi.auth.dto.LoginRequest;
 import dev.faizarfi.auth.dto.RegisterRequest;
 import dev.faizarfi.auth.dto.UserResponseDto;
+import dev.faizarfi.auth.exception.CookieNotFoundException;
 import dev.faizarfi.auth.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,7 +27,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<UserResponseDto> login(@RequestBody @Valid LoginRequest request,
-                                                 HttpServletRequest httpRequest) {
+                                                 HttpServletRequest httpRequest) throws InvalidClientException {
         AuthResponse response = authService.login(request, httpRequest);
 
         // return cookies in response
@@ -62,12 +64,17 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<Void> refreshToken(HttpServletRequest request) {
-        // Extract Refresh Token form Cookie
-        String refreshToken = Arrays.stream(request.getCookies())
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            throw new RuntimeException("Refresh Token not found");
+        }
+
+        // Extract Refresh Token from Cookie
+        String refreshToken = Arrays.stream(cookies)
                 .filter(c -> "refreshToken".equals(c.getName()))
                 .findFirst()
                 .map(Cookie::getValue)
-                .orElseThrow(() -> new RuntimeException("Refresh Token not found"));
+                .orElseThrow(() -> new CookieNotFoundException("Refresh Token not found"));
 
         // Process Refresh
         AuthResponse response = authService.refreshToken(refreshToken);
@@ -87,15 +94,17 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<String> logout (HttpServletRequest request) {
+    public ResponseEntity<String> logout(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+
         // Extract Token
-        String refreshToken = Arrays.stream(request.getCookies())
+        String refreshToken = (cookies == null) ? null : Arrays.stream(cookies)
                 .filter(c -> "refreshToken".equals(c.getName()))
                 .findFirst()
                 .map(Cookie::getValue)
                 .orElse(null);
 
-        if(refreshToken != null) {
+        if (refreshToken != null) {
             authService.logout(refreshToken);
         }
 
