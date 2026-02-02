@@ -22,7 +22,7 @@ function App() {
 
           {/* Private Routes */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/*" element={<Dashboard />} />
           </Route>
         </Routes>
 

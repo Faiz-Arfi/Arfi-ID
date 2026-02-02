@@ -1,26 +1,27 @@
 import React from 'react'
+import Sidebar from '../../components/dashboard/Sidebar'
 import { useAuth } from '../../components/auth/AuthContext'
-import { useNavigate } from 'react-router-dom';
+import Security from './Security';
+import Overview from './Overview';
+import { Route, Routes } from 'react-router-dom';
+import Devices from './Devices';
 
 const Dashboard = () => {
-    const { logout } = useAuth();
-    const navigate = useNavigate();
 
-    const handleLogout = async () => {
-        try {
-            await logout();
-            navigate('/auth');
-            
-        } catch (error) {
-            console.error('Logout failed:', error);
-        }
-    }
+    const user = useAuth().user;
+
     return (
-        <div> Protected Dashboard
-            {/* logout Button */}
-            <button
-                className="m-5 bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90 transition" 
-                onClick={handleLogout}>Logout</button>
+        <div className="flex min-h-screen bg-background w-full">
+            <Sidebar user={user} />
+
+            {/* Main content area with top padding on mobile for fixed header */}
+            <div className="flex-1 pt-16 lg:pt-0 min-w-0 overflow-x-hidden">
+                <Routes>
+                    <Route index element={<Overview />} />
+                    <Route path="security" element={<Security />} />
+                    <Route path="devices" element={<Devices />} />
+                </Routes>
+            </div>
         </div>
     )
 }
