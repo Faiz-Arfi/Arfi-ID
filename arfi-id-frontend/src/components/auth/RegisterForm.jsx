@@ -11,6 +11,7 @@ const RegisterForm = ({ onRegister, onSwitchToLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordValid, setIsPasswordValid] = useState(false);
+  const [serverError, setServerError] = useState('');
 
   const updateForm = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -24,7 +25,8 @@ const RegisterForm = ({ onRegister, onSwitchToLogin }) => {
     try {
       await onRegister(formData);
     } catch (error) {
-      alert('Registration failed. Please try again.');
+      setServerError(error.response.data.message || 'An unexpected error occurred. Please try again.');
+      alert(serverError);
     } finally {
       setIsLoading(false);
     }
