@@ -15,7 +15,12 @@ api.interceptors.response.use(
             
             // 2. Avoid infinite loops: Don't attempt refresh if the failed request WAS the refresh or login
             if (originalRequest.url.includes('/auth/refresh') || originalRequest.url.includes('/auth/login')) {
-                window.location.href = '/auth';
+                // Only redirect if we're not on a public page
+                const publicPaths = ['/', '/auth', '/about'];
+                const currentPath = window.location.pathname;
+                if (!publicPaths.includes(currentPath)) {
+                    window.location.href = '/auth';
+                }
                 return Promise.reject(error);
             }
 
@@ -28,8 +33,12 @@ api.interceptors.response.use(
                 // 4. If successful, retry the original request
                 return api(originalRequest);
             } catch (refreshError) {
-                // 5. If refresh fails, clear everything and go to login
-                window.location.href = '/auth';
+                // 5. If refresh fails, only redirect if not on a public page
+                const publicPaths = ['/', '/auth', '/about'];
+                const currentPath = window.location.pathname;
+                if (!publicPaths.includes(currentPath)) {
+                    window.location.href = '/auth';
+                }
                 return Promise.reject(refreshError);
             }
         }
