@@ -1,5 +1,6 @@
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import React, { useState } from 'react'
+import { toast } from 'sonner';
 
 const LoginForm = ({
     onLogin,
@@ -10,7 +11,6 @@ const LoginForm = ({
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [serverError, setServerError] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -20,15 +20,13 @@ const LoginForm = ({
             const clientId = import.meta.env.VITE_CLIENT_ID;
             await onLogin({ email, password, clientId });
         } catch (error) {
-            setServerError(error.response.data.message || 'An unexpected error occurred. Please try again.');
-            alert(serverError);
+            toast.error('Login failed', { description: error.response.data.message });
         } finally {
             setIsLoading(false);
         }
     };
     const handleOAuthLogin = (provider) => () => {
-        console.log(`Logging in with ${provider}`);
-        alert(`OAuth login with ${provider} is not implemented yet.`);
+        toast.info(`OAuth login with ${provider} is not implemented yet.`);
     };
 
     return (

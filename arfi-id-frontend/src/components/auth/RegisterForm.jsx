@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
 import PasswordStrength from './PasswordStrength';
+import { toast } from 'sonner';
 
 const RegisterForm = ({ onRegister, onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
@@ -11,7 +12,6 @@ const RegisterForm = ({ onRegister, onSwitchToLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordValid, setIsPasswordValid] = useState(false);
-  const [serverError, setServerError] = useState('');
 
   const updateForm = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -25,8 +25,7 @@ const RegisterForm = ({ onRegister, onSwitchToLogin }) => {
     try {
       await onRegister(formData);
     } catch (error) {
-      setServerError(error.response.data.message || 'An unexpected error occurred. Please try again.');
-      alert(serverError);
+      toast.error('Registration failed', { description: error.response.data.message });
     } finally {
       setIsLoading(false);
     }

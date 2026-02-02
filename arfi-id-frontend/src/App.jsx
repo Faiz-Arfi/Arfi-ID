@@ -7,6 +7,7 @@ import About from './pages/About'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import Dashboard from './pages/dashboard/Dashboard'
 import { AuthProvider } from './components/auth/AuthContext'
+import { Toaster } from 'sonner'
 
 function App() {
 
@@ -24,6 +25,12 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
           </Route>
         </Routes>
+
+        <Toaster 
+          position="top-right"
+          richColors
+          closeButton />
+
       </AuthProvider>
     </BrowserRouter>
   )

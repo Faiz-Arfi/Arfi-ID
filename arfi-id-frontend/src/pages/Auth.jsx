@@ -5,6 +5,7 @@ import LoginForm from '../components/auth/LoginForm'
 import RegisterForm from '../components/auth/RegisterForm'
 import ForgotPasswordForm from '../components/auth/ForgotPasswordForm'
 import AuthCheckSpinner from '../components/auth/AuthCheckSpinner'
+import { toast } from 'sonner'
 
 const Auth = () => {
   const { user, isLoading, login, register } = useAuth();
@@ -36,10 +37,9 @@ const Auth = () => {
   const handleRegister = async (data) => {
     try {
       await register(data);
-      alert('Registration successful! Please log in.');
+      toast.success('Registration successful!', { description: 'Log in to Continue' });
       setMode('login');
     } catch (error) {
-      console.error('Registration error:', error);
       throw error; // Re-throw so RegisterForm can handle it
     }
   };
