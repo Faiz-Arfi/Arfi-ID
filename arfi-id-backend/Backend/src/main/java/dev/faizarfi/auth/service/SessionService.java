@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -42,11 +43,13 @@ public class SessionService {
             throw new UsernameNotFoundException("User not found");
         }
 
-        List<RefreshToken> sessions;
-        if(clientId != null) {
-            sessions = refreshTokenRepository.findAllByUserAndClientId(user, clientId);
-        }
-        else sessions = refreshTokenRepository.findAllByUser(user);
+        Instant now = Instant.now();
+        List<RefreshToken> sessions =
+                clientId != null ?
+                        refreshTokenRepository
+                                .findAllByUserAndClient_ClientIdAndRevokedFalseAndExpiryDateAfter(user, clientId, now)
+                        : refreshTokenRepository
+                            .findAllByUserAndRevokedFalseAndExpiryDateAfter(user, now);
 
         List<SessionDto> dtos = sessions.stream()
                 .filter(t -> !t.isRevoked())
