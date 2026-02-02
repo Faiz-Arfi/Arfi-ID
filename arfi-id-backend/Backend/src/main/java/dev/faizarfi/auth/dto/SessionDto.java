@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -18,7 +17,9 @@ public class SessionDto {
 
     private UUID id;
     private String clientName;
-    private String deviceInfo;
+    private String browser;
+    private String os;
+    private String deviceType;
     private String ipAddress;
     private Instant lastActive;
     private boolean isCurrentSession;

@@ -3,12 +3,14 @@ package dev.faizarfi.auth.service;
 import dev.faizarfi.auth.dto.SessionDto;
 import dev.faizarfi.auth.entity.RefreshToken;
 import dev.faizarfi.auth.entity.User;
+import dev.faizarfi.auth.exception.CookieNotFoundException;
 import dev.faizarfi.auth.repository.RefreshTokenRepository;
 import dev.faizarfi.auth.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -37,7 +39,7 @@ public class SessionService {
 
         if(user == null) {
             log.error("User not found for email: {}", email);
-            throw new RuntimeException("User not found");
+            throw new UsernameNotFoundException("User not found");
         }
 
         List<RefreshToken> sessions;
@@ -47,15 +49,23 @@ public class SessionService {
         else sessions = refreshTokenRepository.findAllByUser(user);
 
         List<SessionDto> dtos = sessions.stream()
-                .filter(t -> !t.isRevoked()) // Only show active
-                .map(t -> SessionDto.builder()
-                        .id(t.getId())
-                        .clientName(t.getClient().getClientName())
-                        .deviceInfo(parseUserAgent(t.getDeviceInfo()))
-                        .ipAddress(t.getIpAddress())
-                        .lastActive(t.getExpiryDate().minusMillis(604800000)) // Approx creation time
-                        .isCurrentSession(t.getToken().equals(getTokenFromCookie(request, false))) // Highlight current
-                        .build())
+                .filter(t -> !t.isRevoked())
+                .map(t -> {
+                    String[] ua = parseUserAgent(t.getDeviceInfo());
+
+                    return SessionDto.builder()
+                            .id(t.getId())
+                            .clientName(t.getClient().getClientName())
+                            .browser(ua[0])
+                            .os(ua[1])
+                            .deviceType(ua[2])
+                            .ipAddress(t.getIpAddress())
+                            .lastActive(t.getExpiryDate().minusMillis(604800000))
+                            .isCurrentSession(
+                                    t.getToken().equals(getTokenFromCookie(request, false))
+                            )
+                            .build();
+                })
                 .toList();
 
         return ResponseEntity.ok(dtos);
@@ -86,14 +96,15 @@ public class SessionService {
                 .filter(cookie -> cookie.getName().equals(cookieName))
                 .findFirst()
                 .map(Cookie::getValue)
-                .orElseThrow(() -> new RuntimeException("Access Token not found"));
+                .orElseThrow(() -> new CookieNotFoundException("Access Token not found"));
     }
 
-    private String parseUserAgent(String ua) {
-        if (ua == null) return "Unknown Device";
+    private String[] parseUserAgent(String ua) {
+        if (ua == null) return new String[]{"Unknown Browser", "Unknown OS", "desktop"};
 
         String browser = "Unknown Browser";
         String os = "Unknown OS";
+        String deviceType = "desktop";
 
         // Simple parsing logic (You can use a library like 'uap-java' for perfection)
         if (ua.contains("Edg/")) browser = "Edge";
@@ -107,6 +118,8 @@ public class SessionService {
         else if (ua.contains("iPhone")) os = "iOS";
         else if (ua.contains("Linux")) os = "Linux";
 
-        return browser + " on " + os;
+        if(ua.contains("mobile") || ua.contains("android") || ua.contains("iphone")) deviceType = "mobile";
+
+        return new String[]{browser, os, deviceType};
     }
 }
