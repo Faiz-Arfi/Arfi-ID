@@ -3,8 +3,10 @@ package dev.faizarfi.auth.repository;
 import dev.faizarfi.auth.entity.RefreshToken;
 import dev.faizarfi.auth.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -28,4 +30,9 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
             String clientId,
             Instant now
     );
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM RefreshToken t WHERE t.expiryDate <= :now")
+    void deleteExpiredTokens(Instant now);
 }
