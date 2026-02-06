@@ -18,11 +18,6 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
 
     Optional<RefreshToken> findByToken(String token);
 
-    List<RefreshToken> findAllByUser(User user);
-
-    @Query("SELECT r FROM RefreshToken r WHERE r.user = :user AND r.client.clientId = :clientId")
-    List<RefreshToken> findAllByUserAndClientId(User user, String clientId);
-
     List<RefreshToken> findAllByUserAndRevokedFalseAndExpiryDateAfter(User user, Instant now);
 
     List<RefreshToken> findAllByUserAndClient_ClientIdAndRevokedFalseAndExpiryDateAfter(
@@ -35,4 +30,8 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
     @Transactional
     @Query("DELETE FROM RefreshToken t WHERE t.expiryDate <= :now")
     void deleteExpiredTokens(Instant now);
+
+    void deleteByUser_IdAndClient_ClientId(UUID user_id, String client_clientId);
+
+    User user(User user);
 }

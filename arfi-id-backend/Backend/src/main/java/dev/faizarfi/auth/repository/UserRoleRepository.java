@@ -13,4 +13,6 @@ import java.util.UUID;
 public interface UserRoleRepository extends JpaRepository<UserRole, UUID> {
 
     Optional<UserRole> findByUserAndClient(User user, Client client);
+
+    Optional<UserRole> findByUser_IdAndClient_ClientId(UUID userId, String clientId);
 }

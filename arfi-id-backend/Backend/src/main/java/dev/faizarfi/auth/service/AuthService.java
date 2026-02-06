@@ -76,12 +76,15 @@ public class AuthService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + request.getEmail()));
 
         // Fetch Role for this user and client
-        String actualRole = userRoleRepository.findByUserAndClient(user, client)
-                .map(UserRole::getRole)
-                .orElse("ROLE_GUEST"); // if no role found, default to guest
+        UserRole userRole = userRoleRepository.findByUserAndClient(user, client)
+                .orElseThrow(() -> new RuntimeException("No access to this project"));
 
-        String accessToken = jwtService.generateAccessToken(request.getEmail(), request.getClientId(), actualRole);
-        String refreshToken = jwtService.generateRefreshToken(request.getEmail(), request.getClientId());
+        if(userRole.isRevoked()) {
+            throw new RuntimeException("Access to this project has been revoked by the user");
+        }
+
+        String accessToken = jwtService.generateAccessToken(user.getEmail(), client.getClientId(), userRole.getRole());
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail(), client.getClientId());
 
         // Save refresh token to database
         saveUserToken(user, client, refreshToken, httpRequest);
@@ -91,7 +94,7 @@ public class AuthService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .userId(user.getId())
-                .role(actualRole)
+                .role(userRole.getRole())
                 .email(user.getEmail())
                 .build();
         return authResponse;
@@ -103,7 +106,7 @@ public class AuthService {
         }
 
         // Resolve Client (Default to "arfi-web-local" if not provided)
-        Client client = clientRepository.findByClientId("arfi-web-local")
+        Client client = clientRepository.findByClientId("arfi-id")
                 .orElseThrow(() -> new RuntimeException("Default client not found"));
 
         String hashedPassword = passwordEncoder.encode(request.getPassword());
@@ -135,6 +138,13 @@ public class AuthService {
         // Check db if this token is valid and not revoked
         RefreshToken tokenEntity = refreshTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> new RuntimeException("Token not found"));
+
+        UserRole userRole = userRoleRepository.findByUserAndClient(tokenEntity.getUser(), tokenEntity.getClient())
+                .orElseThrow(() -> new RuntimeException("Access lost to user: " + email));
+
+        if(userRole.isRevoked()) {
+            throw new RuntimeException("Access revoked. Refresh denied.");
+        }
 
         if (tokenEntity.isRevoked()) {
             throw new RuntimeException("Token has been revoked");
