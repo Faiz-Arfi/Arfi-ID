@@ -31,6 +31,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // We are allowing the STANDARD paths here:
                         .requestMatchers("/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/oauth2/**").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 // Stateless Session (No JSESSIONID)
