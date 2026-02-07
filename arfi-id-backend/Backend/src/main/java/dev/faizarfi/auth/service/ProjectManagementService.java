@@ -13,6 +13,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -78,6 +79,32 @@ public class ProjectManagementService {
         role.setRevoked(false);
         role.setRevokedAt(null);
         userRoleRepository.save(role);
+    }
+
+    public ResponseEntity<String> connectProject(String clientId, HttpServletRequest request) {
+        User user = getAuthenticatedUser(request);
+        Client client = clientRepository.findById(clientId).orElseThrow(() -> new RuntimeException("Client not found"));
+
+        // Check if the user already has a role for this client
+        var existingRoleOpt = userRoleRepository.findByUser_IdAndClient_ClientId(user.getId(), clientId);
+        if (existingRoleOpt.isPresent()) {
+            UserRole existingRole = existingRoleOpt.get();
+            if (existingRole.isRevoked()) {
+                return ResponseEntity.badRequest().body("Access to this project is revoked. Please restore access first.");
+            } else {
+                return ResponseEntity.badRequest().body("Already connected to this project.");
+            }
+        }
+
+        UserRole newRole = UserRole.builder()
+                .user(user)
+                .client(client)
+                .role("USER") // Default role, can be enhanced to support different roles
+                .isRevoked(false)
+                .build();
+
+        userRoleRepository.save(newRole);
+        return ResponseEntity.ok("Successfully connected to the project.");
     }
 
     private User getAuthenticatedUser(HttpServletRequest request) {

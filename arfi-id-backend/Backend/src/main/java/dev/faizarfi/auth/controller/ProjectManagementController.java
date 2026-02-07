@@ -32,4 +32,9 @@ public class ProjectManagementController {
         projectManagementService.restoreProjectAccess(clientId, request);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/connect/{clientId}")
+    public ResponseEntity<String> connectProject(@PathVariable String clientId, HttpServletRequest request) {
+        return projectManagementService.connectProject(clientId, request);
+    }
 }
