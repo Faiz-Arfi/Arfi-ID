@@ -1,38 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { CheckCircle, XCircle, Clock, Shield, ExternalLink, RotateCcw, Trash2, AlertCircle } from 'lucide-react';
-import { connectApp, getAppData, restoreAppAccess, revokeAppAccess } from '../../service/projectManagementService';
+import { connectApp, restoreAppAccess, revokeAppAccess } from '../../service/projectManagementService';
 
-const ConnectedApps = () => {
-  const [connectedApps, setConnectedApps] = useState([]);
-  const [availableApps, setAvailableApps] = useState([]);
-  const [revokedApps, setRevokedApps] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAppData = async () => {
-      try {
-        const response = await getAppData();
-
-        // Ensure response is an array
-        const apps = Array.isArray(response) ? response : [response];
-
-        // Redistribute apps based on connected and revoked status
-        const connected = apps.filter(app => app.connected && !app.revoked);
-        const available = apps.filter(app => !app.connected && !app.revoked);
-        const revoked = apps.filter(app => app.revoked);
-
-        setConnectedApps(connected);
-        setAvailableApps(available);
-        setRevokedApps(revoked);
-      } catch (error) {
-        console.error('Error fetching app data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAppData();
-  }, []);
+const ConnectedApps = ({
+  connectedApps = [], 
+  availableApps = [], 
+  revokedApps = [], 
+  isLoading = true,
+  setConnectedApps,
+  setAvailableApps,
+  setRevokedApps
+}) => {
 
   const formatDate = (timestamp) => {
     const date = new Date(timestamp);
@@ -132,7 +110,7 @@ const ConnectedApps = () => {
     setRevokedApps(revokedApps.filter(a => a.clientId !== clientId));
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-4 md:p-6 lg:p-8 flex items-center justify-center min-h-screen">
         <div className="text-center">
