@@ -5,6 +5,7 @@ import Security from './Security';
 import Overview from './Overview';
 import { Route, Routes } from 'react-router-dom';
 import Devices from './Devices';
+import ConnectedApps from './ConnectedApps';
 
 const Dashboard = () => {
 
@@ -20,6 +21,7 @@ const Dashboard = () => {
                     <Route index element={<Overview />} />
                     <Route path="security" element={<Security />} />
                     <Route path="devices" element={<Devices />} />
+                    <Route path="apps" element={<ConnectedApps />} />
                 </Routes>
             </div>
         </div>

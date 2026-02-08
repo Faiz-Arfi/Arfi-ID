@@ -7,6 +7,7 @@ const MENU_ITEMS = [
     { id: 'overview', label: 'Overview', icon: LayoutGrid, path: '/dashboard' },
     { id: 'security', label: 'Security', icon: Shield, path: '/dashboard/security' },
     { id: 'devices', label: 'Devices', icon: Monitor, path: '/dashboard/devices' },
+    { id: 'apps', label: 'Connected Apps', icon: Puzzle, path: '/dashboard/apps' },
 ];
 
 const Sidebar = ({ user }) => {
