@@ -11,6 +11,7 @@ public class ProjectConnectionDto {
     private String clientId;
     private String clientName;
     private String clientDescription;
+    private String redirectUri;
     private String role;
     private boolean isConnected;
     private boolean isRevoked;

@@ -5,6 +5,7 @@ import dev.faizarfi.auth.entity.Client;
 import dev.faizarfi.auth.entity.RefreshToken;
 import dev.faizarfi.auth.entity.User;
 import dev.faizarfi.auth.entity.UserRole;
+import dev.faizarfi.auth.exception.CookieNotFoundException;
 import dev.faizarfi.auth.repository.ClientRepository;
 import dev.faizarfi.auth.repository.RefreshTokenRepository;
 import dev.faizarfi.auth.repository.UserRepository;
@@ -48,6 +49,7 @@ public class ProjectManagementService {
                     .clientId(client.getClientId())
                     .clientName(client.getClientName())
                     .clientDescription(client.getClientDescription())
+                    .redirectUri(client.getRedirectUri())
                     .isConnected(userRoleOpt.isPresent())
                     .isRevoked(userRoleOpt.map(UserRole::isRevoked).orElse(false))
                     .role(userRoleOpt.map(UserRole::getRole).orElse(null))
@@ -118,6 +120,6 @@ public class ProjectManagementService {
                 .filter(cookie -> cookie.getName().equals(cookieName))
                 .findFirst()
                 .map(Cookie::getValue)
-                .orElseThrow(() -> new RuntimeException("Access Token not found"));
+                .orElseThrow(() -> new CookieNotFoundException("Access Token not found"));
     }
 }

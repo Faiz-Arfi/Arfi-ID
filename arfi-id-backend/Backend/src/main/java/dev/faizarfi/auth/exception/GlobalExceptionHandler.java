@@ -55,6 +55,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, "Validation Failed: " + details, request);
     }
 
+    @ExceptionHandler(JWTExpiredException.class)
+    public ResponseEntity<ApiErrorResponse> handleJWTExpirationError(JWTExpiredException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleAllExceptions(Exception ex, HttpServletRequest request) {
         log.error("Unexpected error occurred ", ex);

@@ -1,6 +1,8 @@
 package dev.faizarfi.auth.service;
 
+import dev.faizarfi.auth.exception.JWTExpiredException;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
@@ -73,15 +75,23 @@ public class JwtService {
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
+        if (claims == null) throw new JWTExpiredException("Access token expired. Use refresh token to get a new one.");
         return claimsResolver.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSignInKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        // try catch to detect expired tokens
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSignInKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        }
+        catch (ExpiredJwtException e) {
+            // return null if token is expired
+            return null;
+        }
     }
 
     private boolean isTokenExpired(String token) {
