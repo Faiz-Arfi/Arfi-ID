@@ -8,6 +8,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 import Dashboard from './pages/dashboard/Dashboard'
 import { AuthProvider } from './components/auth/AuthContext'
 import { Toaster } from 'sonner'
+import OAuthAuth from './pages/OAuthAuth'
 
 function App() {
 
@@ -17,6 +18,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/oauth" element={<OAuthAuth />} />
           <Route path="/about" element={<About />} />
           <Route path="*" element={<NotFound />} />
 

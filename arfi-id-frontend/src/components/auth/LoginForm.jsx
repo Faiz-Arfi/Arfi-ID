@@ -6,6 +6,7 @@ const LoginForm = ({
     onLogin,
     onSwitchToRegister,
     onForgotPassword,
+    clientId: propClientId,
 }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -17,7 +18,7 @@ const LoginForm = ({
         setIsLoading(true);
 
         try {
-            const clientId = import.meta.env.VITE_CLIENT_ID;
+            const clientId = propClientId || import.meta.env.VITE_CLIENT_ID || 'arfi-id';
             await onLogin({ email, password, clientId });
         } catch (error) {
             toast.error('Login failed', { description: error.response.data.message });
