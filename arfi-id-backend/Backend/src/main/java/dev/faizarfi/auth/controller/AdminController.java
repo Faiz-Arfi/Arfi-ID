@@ -3,7 +3,6 @@ package dev.faizarfi.auth.controller;
 import dev.faizarfi.auth.dto.ClientRegistrationResponse;
 import dev.faizarfi.auth.dto.NewClientRequest;
 import dev.faizarfi.auth.service.AdminService;
-import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

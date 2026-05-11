@@ -1,17 +1,12 @@
 package dev.faizarfi.auth.controller;
 
 import dev.faizarfi.auth.dto.SessionDto;
-import dev.faizarfi.auth.entity.User;
-import dev.faizarfi.auth.repository.UserRepository;
-import dev.faizarfi.auth.service.JwtService;
 import dev.faizarfi.auth.service.SessionService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 

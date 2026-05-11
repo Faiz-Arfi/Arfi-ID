@@ -10,22 +10,22 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "user_roles", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"user_id", "client_id"}) // One role per user per client (for now)
-}, indexes = {
-        @Index(name = "idx_user_roles_user_client",
-        columnList = "user_id, client_id"
-        )
+@Table(name = "authorization_codes", indexes = {
+    @Index(name = "idx_auth_code", columnList = "code"), // For fast lookup by code
+        @Index(name = "idx_auth_code_expiry", columnList = "expiryDate") // For cleanup jobs
 })
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class UserRole {
+public class AuthorizationCode {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Column(nullable = false, unique = true, length = 255)
+    private String code;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -35,17 +35,24 @@ public class UserRole {
     @JoinColumn(name = "client_id", nullable = false)
     private Client client;
 
-    @Column(nullable = false)
-    private String role; // ex "ROLE_ADMIN", "ROLE_EDITOR"
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String redirectUri;
 
+    // CSRF protection token from the client, return along with the code
+    @Column(length = 500)
+    private String state;
+
+    @Column(nullable = false)
+    private Instant expiryDate;
+
+    @Column(nullable = false)
     @Builder.Default
-    @Column(nullable = false)
-    private boolean isRevoked = false;
+    private boolean used = false;
 
-    @Column(name = "created_at", updatable = false)
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    private Instant revokedAt;
+    private Instant usedAt;
 
     @PrePersist
     protected void onCreate() {

@@ -9,8 +9,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class NewClientRequest {
+public class ClientPublicInfoDto {
+
+    private String clientId;
+
     private String clientName;
+
     private String clientDescription;
+
     private String redirectUri;
+
+    private boolean isActive;
 }

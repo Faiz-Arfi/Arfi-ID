@@ -1,6 +1,5 @@
 package dev.faizarfi.auth.dto;
 
-import dev.faizarfi.auth.entity.RefreshToken;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

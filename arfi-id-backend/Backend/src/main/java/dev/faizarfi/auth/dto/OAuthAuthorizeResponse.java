@@ -9,8 +9,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class NewClientRequest {
-    private String clientName;
-    private String clientDescription;
+public class OAuthAuthorizeResponse {
+
+    private String code;
+
+    private String state;
+
     private String redirectUri;
+
+    private Integer expiresIn;
 }

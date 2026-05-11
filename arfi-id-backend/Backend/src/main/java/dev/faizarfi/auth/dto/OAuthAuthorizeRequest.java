@@ -1,6 +1,5 @@
 package dev.faizarfi.auth.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,15 +10,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class LoginRequest {
-
-    @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
-    private String email;
-
-    @NotBlank(message = "Password is required")
-    private String password;
+public class OAuthAuthorizeRequest {
 
     @NotBlank(message = "Client ID is required")
     private String clientId;
+
+    @NotBlank(message = "Redirect URI is required")
+    private String redirectUri;
+
+    private String state;
 }

@@ -1,6 +1,7 @@
 package dev.faizarfi.auth.config;
 
 import dev.faizarfi.auth.service.TokenCleanupService;
+import org.jspecify.annotations.NonNull;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -14,7 +15,7 @@ public class StartupCleaner implements ApplicationRunner {
     }
 
     @Override
-    public void run(ApplicationArguments args) throws Exception {
+    public void run(@NonNull ApplicationArguments args) throws Exception {
         tokenCleanupService.cleanupExpiredTokens();
     }
 }
