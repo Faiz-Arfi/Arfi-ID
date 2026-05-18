@@ -11,9 +11,9 @@ spring:
             scope: profile, email
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/arfi_auth
-    username: arfi_user
-    password: password123
+#    url: jdbc:postgresql://localhost:5432/arfi_auth
+#    username: arfi_user
+#    password: password123
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -27,7 +27,9 @@ spring:
 
   docker:
     compose:
-      enabled: false
+      enabled: true
+      file: compose.yaml
+      lifecycle-management: start_and_stop
 
 #springdoc:
 #  api-docs:
