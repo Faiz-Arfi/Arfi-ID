@@ -4,11 +4,13 @@ import dev.faizarfi.auth.dto.ClientRegistrationResponse;
 import dev.faizarfi.auth.dto.NewClientRequest;
 import dev.faizarfi.auth.entity.Client;
 import dev.faizarfi.auth.repository.ClientRepository;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.security.SecureRandom;
+import javax.crypto.SecretKey;
 import java.util.Base64;
 
 @Service
@@ -44,11 +46,9 @@ public class AdminService {
                 .build();
     }
 
+    // Generate client secret as a valid JWT Secret Key
     private String generateClientSecret() {
-        SecureRandom random = new SecureRandom();
-        byte[] bytes = new byte[32];
-        random.nextBytes(bytes);
-
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+        return Base64.getEncoder().withoutPadding().encodeToString(key.getEncoded());
     }
 }

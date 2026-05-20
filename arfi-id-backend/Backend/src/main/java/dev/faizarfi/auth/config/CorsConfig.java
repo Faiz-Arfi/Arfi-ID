@@ -20,7 +20,7 @@ public class CorsConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // who can access the API
-        configuration.setAllowedOrigins(List.of(frontendUrl, "http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of(frontendUrl, "http://localhost:5173", "http://localhost:5174"));
 
         // what methods
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

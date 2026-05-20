@@ -24,6 +24,7 @@ import java.util.UUID;
 public class OAuthService {
 
     private static final long AUTH_CODE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
+    private final ChildProjectJwtService childProjectJwtService;
     @Value("${jwt.refresh-expiration:604800000}")
     private Long refreshTokenValidity;
     private final ClientRepository clientRepository;
@@ -170,8 +171,8 @@ public class OAuthService {
         authCode.setUsedAt(Instant.now());
         authorizationCodeRepository.save(authCode);
 
-        String accessToken = jwtService.generateAccessToken(user.getEmail(), client.getClientId(), userRole.getRole());
-        String refreshToken = jwtService.generateRefreshToken(user.getEmail(), client.getClientId());
+        String accessToken = childProjectJwtService.generateAccessToken(user.getEmail(), client.getClientId(), userRole.getRole(), request.getClientSecret());
+        String refreshToken = childProjectJwtService.generateRefreshToken(user.getEmail(), client.getClientId(), request.getClientSecret());
 
         saveRefreshToken(user, client, refreshToken, httpRequest);
         log.info("Token issued successfully for user={}, client={}", user.getEmail(), client.getClientId());
