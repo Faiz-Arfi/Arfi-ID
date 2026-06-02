@@ -11,6 +11,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -25,26 +26,21 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @Value("${jwt.access-expiration}")
+    private long accessExpiration;
+
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpiration;
+
     @PostMapping("/login")
     public ResponseEntity<UserResponseDto> login(@RequestBody @Valid LoginRequest request,
                                                  HttpServletRequest httpRequest) throws InvalidClientException {
         AuthResponse response = authService.login(request, httpRequest);
 
         // return cookies in response
-        ResponseCookie accessCookie = ResponseCookie.from("accessToken", response.getAccessToken())
-                .httpOnly(true)
-                .secure(false) // for local development its false
-                .path("/")
-                .maxAge(60 * 15) // 15 minutes
-                .sameSite("Strict")
-                .build();
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", response.getRefreshToken())
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(60 * 60 * 24 * 30) // 7 days
-                .sameSite("Strict")
-                .build();
+        ResponseCookie accessCookie = generateCookie("accessToken", response.getAccessToken(), accessExpiration/1000);
+        ResponseCookie refreshCookie = generateCookie("refreshToken", response.getRefreshToken(),refreshExpiration/1000);
+
         UserResponseDto userResponse = UserResponseDto.builder()
                 .id(response.getUserId())
                 .email(response.getEmail())
@@ -80,13 +76,7 @@ public class AuthController {
         AuthResponse response = authService.refreshToken(refreshToken);
 
         // Issue New Access Cookie
-        ResponseCookie accessCookie = ResponseCookie.from("accessToken", response.getAccessToken())
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(60 * 15)
-                .sameSite("Strict")
-                .build();
+        ResponseCookie accessCookie = generateCookie("accessToken", response.getAccessToken(),accessExpiration/1000);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
@@ -109,14 +99,8 @@ public class AuthController {
         }
 
         // Clear Cookies
-        ResponseCookie accessCookie = ResponseCookie.from("accessToken", "")
-                .path("/")
-                .maxAge(0)
-                .build();
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
-                .path("/")
-                .maxAge(0)
-                .build();
+        ResponseCookie accessCookie = generateCookie("accessToken", "", 0L);
+        ResponseCookie refreshCookie = generateCookie("refreshToken", "", 0L);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
@@ -127,5 +111,15 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<UserResponseDto> getCurrentUser(HttpServletRequest request) {
         return authService.getCurrentUser(request);
+    }
+
+    private ResponseCookie generateCookie(String name, String value, Long duration) {
+        return ResponseCookie.from(name, value)
+                .httpOnly(true)
+                .secure(false) // for local development its false
+                .path("/")
+                .maxAge(duration)
+                .sameSite("Strict")
+                .build();
     }
 }
