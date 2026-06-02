@@ -113,6 +113,26 @@ public class AuthController {
         return authService.getCurrentUser(request);
     }
 
+    @PostMapping("/admin-login")
+    public ResponseEntity<UserResponseDto> adminLogin(@RequestBody @Valid LoginRequest request,
+                                                 HttpServletRequest httpRequest) throws InvalidClientException {
+        AuthResponse response = authService.adminLogin(request, httpRequest);
+
+        // return cookies in response
+        ResponseCookie accessCookie = generateCookie("accessToken", response.getAccessToken(), accessExpiration/1000);
+        ResponseCookie refreshCookie = generateCookie("refreshToken", response.getRefreshToken(),refreshExpiration/1000);
+
+        UserResponseDto userResponse = UserResponseDto.builder()
+                .id(response.getUserId())
+                .email(response.getEmail())
+                .role(response.getRole())
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(userResponse);
+    }
+
     private ResponseCookie generateCookie(String name, String value, Long duration) {
         return ResponseCookie.from(name, value)
                 .httpOnly(true)

@@ -17,6 +17,8 @@ import dev.faizarfi.auth.repository.UserRepository;
 import dev.faizarfi.auth.repository.UserRoleRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,7 +31,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Objects;
 
+@Slf4j
 @Service
 public class AuthService {
 
@@ -225,6 +229,17 @@ public class AuthService {
                 .email(user.getEmail())
                 .role(jwtService.extractRole(token))
                 .build());
+    }
+
+    public AuthResponse adminLogin(@Valid LoginRequest request, HttpServletRequest httpRequest) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + request.getEmail()));
+        if(!Objects.equals(user.getRole(), "ROLE_ADMIN")) {
+            log.warn("Unauthorized admin login attempt for email: {}", request.getEmail());
+            throw new RuntimeException("Unauthorized: Not an admin user");
+        }
+
+        return login(request, httpRequest);
     }
 
     private String getTokenFromCookie(HttpServletRequest request, boolean isAccessTokenRequired) {
