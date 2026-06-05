@@ -17,6 +17,11 @@ import java.util.stream.Collectors;
 @Log4j2
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(AdminAccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAdminAccessDenied(AdminAccessDeniedException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(ResourceAlreadyExistsException.class)
     public ResponseEntity<ApiErrorResponse> handleResourceExists(ResourceAlreadyExistsException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);

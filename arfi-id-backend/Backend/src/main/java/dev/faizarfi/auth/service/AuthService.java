@@ -9,6 +9,7 @@ import dev.faizarfi.auth.entity.RefreshToken;
 import dev.faizarfi.auth.entity.User;
 import dev.faizarfi.auth.entity.UserRole;
 import dev.faizarfi.auth.exception.AccountDisabledException;
+import dev.faizarfi.auth.exception.AdminAccessDeniedException;
 import dev.faizarfi.auth.exception.InvalidClientException;
 import dev.faizarfi.auth.exception.ResourceAlreadyExistsException;
 import dev.faizarfi.auth.repository.ClientRepository;
@@ -236,7 +237,7 @@ public class AuthService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + request.getEmail()));
         if(!Objects.equals(user.getRole(), "ROLE_ADMIN")) {
             log.warn("Unauthorized admin login attempt for email: {}", request.getEmail());
-            throw new RuntimeException("Unauthorized: Not an admin user");
+            throw new AdminAccessDeniedException("Unauthorized: Not an admin user");
         }
 
         return login(request, httpRequest);
