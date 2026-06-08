@@ -34,4 +34,27 @@ public class AdminController {
                 .toUri();
         return ResponseEntity.created(location).body(response);
     }
+
+    @GetMapping("/projects/{id}")
+    public ResponseEntity<ClientRegistrationResponse> getProjectById(@PathVariable("id") String clientId) {
+        return ResponseEntity.ok(adminService.getProjectById(clientId));
+    }
+
+    @GetMapping("/projects")
+    public ResponseEntity<Page<ClientRegistrationResponse>> getAllProjects(
+            @PageableDefault(
+//                    page = 0,
+                    size = 20,
+                    sort = "clientName",
+                    direction = Sort.Direction.ASC
+            )
+            Pageable p) {
+        return ResponseEntity.ok(adminService.getAllProjects(p));
+    }
+
+    @DeleteMapping("/projects/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteProjectById(@PathVariable("id") String clientId) {
+        adminService.deleteProjectById(clientId);
+    }
 }
