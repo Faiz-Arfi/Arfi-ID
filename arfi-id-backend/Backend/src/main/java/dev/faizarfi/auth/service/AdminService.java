@@ -2,12 +2,13 @@ package dev.faizarfi.auth.service;
 
 import dev.faizarfi.auth.dto.ClientRegistrationResponse;
 import dev.faizarfi.auth.dto.NewClientRequest;
+import dev.faizarfi.auth.dto.UpdateClientRequest;
 import dev.faizarfi.auth.entity.Client;
-import dev.faizarfi.auth.exception.InvalidClientException;
 import dev.faizarfi.auth.exception.ResourceNotFoundException;
 import dev.faizarfi.auth.repository.ClientRepository;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -61,6 +62,22 @@ public class AdminService {
 
     public void deleteProjectById(String clientId) {
         clientRepository.deleteById(clientId);
+    }
+
+    public ClientRegistrationResponse modifyProject(String clientId, UpdateClientRequest request) {
+        Client client = clientRepository.findById(clientId).orElseThrow(() -> new ResourceNotFoundException("Client with id " + clientId + " not found"));
+
+        if(request.clientDescription() != null) {
+            client.setClientDescription(request.clientDescription());
+        }
+        if(request.clientName() != null) {
+            client.setClientName(request.clientName());
+        }
+        if(request.redirectUri() != null) {
+            client.setRedirectUri(request.redirectUri());
+        }
+        clientRepository.save(client);
+        return ClientRegistrationResponse.fromEntity(client);
     }
 
     // Generate client secret as a valid JWT Secret Key

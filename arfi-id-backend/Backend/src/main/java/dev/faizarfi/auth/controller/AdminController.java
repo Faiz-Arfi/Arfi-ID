@@ -2,6 +2,7 @@ package dev.faizarfi.auth.controller;
 
 import dev.faizarfi.auth.dto.ClientRegistrationResponse;
 import dev.faizarfi.auth.dto.NewClientRequest;
+import dev.faizarfi.auth.dto.UpdateClientRequest;
 import dev.faizarfi.auth.service.AdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,12 @@ public class AdminController {
             )
             Pageable p) {
         return ResponseEntity.ok(adminService.getAllProjects(p));
+    }
+
+    @PutMapping("/projects/{id}")
+    public ResponseEntity<ClientRegistrationResponse> updateProjectById(@PathVariable("id") String clientId, @Valid @RequestBody UpdateClientRequest request) {
+        ClientRegistrationResponse response = adminService.modifyProject(clientId, request);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/projects/{id}")
