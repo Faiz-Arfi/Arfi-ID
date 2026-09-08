@@ -42,6 +42,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Value("${frontend.url: http://localhost:5173}")
     private String frontendUrl;
 
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSecure;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
 
@@ -97,14 +100,14 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         // Set Cookies
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", accessToken)
                 .httpOnly(true)
-                .secure(false)
+                .secure(cookieSecure)
                 .path("/")
                 .maxAge(accessTokenValidity / 1000)
                 .sameSite("Lax") // Must be Lax for OAuth
                 .build();
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(false)
+                .secure(cookieSecure)
                 .path("/")
                 .maxAge(refreshTokenValidity / 1000)
                 .sameSite("Lax")

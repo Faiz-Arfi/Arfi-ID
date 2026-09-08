@@ -33,3 +33,8 @@ frontend:
 admin:
   email: ${ADMIN_Email:admin@localhost}
   password: ${ADMIN_PASSWORD:DontTellAnyone}
+
+app:
+  cookie:
+    #    domain: ${COOKIE_DOMAIN:localhost}
+    secure: ${COOKIE_SECURE:false}

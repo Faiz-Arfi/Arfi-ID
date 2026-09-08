@@ -29,3 +29,8 @@ frontend:
 admin:
   email: ${ADMIN_Email}
   password: ${ADMIN_PASSWORD}
+
+app:
+  cookie:
+    #    domain: ${COOKIE_DOMAIN:localhost}
+    secure: ${COOKIE_SECURE:false}

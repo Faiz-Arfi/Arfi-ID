@@ -32,6 +32,9 @@ public class AuthController {
     @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
 
+    @Value("${app.cookie.secure}")
+    private boolean cookieSecure;
+
     @PostMapping("/login")
     public ResponseEntity<UserResponseDto> login(@RequestBody @Valid LoginRequest request,
                                                  HttpServletRequest httpRequest) throws InvalidClientException {
@@ -136,10 +139,10 @@ public class AuthController {
     private ResponseCookie generateCookie(String name, String value, Long duration) {
         return ResponseCookie.from(name, value)
                 .httpOnly(true)
-                .secure(false) // for local development its false
+                .secure(cookieSecure) // for local development its false
                 .path("/")
                 .maxAge(duration)
-                .sameSite("Strict")
+                .sameSite("Lax")
                 .build();
     }
 }
