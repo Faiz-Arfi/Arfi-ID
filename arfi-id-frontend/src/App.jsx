@@ -26,7 +26,6 @@ import AdminProjects from "./pages/admin/dashboard-pages/AdminProjects";
 import AdminSecurity from "./pages/admin/dashboard-pages/AdminSecurity";
 import AdminLogs from "./pages/admin/dashboard-pages/AdminLogs";
 import AdminClientManagement from "./pages/admin/dashboard-pages/AdminClientManagement";
-import ApplyFor from "./pages/ApplyFor";
 
 function App() {
   return (
