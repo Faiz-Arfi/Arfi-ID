@@ -19,8 +19,9 @@ COPY --from=builder /app/target/*.jar app.jar
 EXPOSE 8080
 
 ENTRYPOINT ["java", \
-    "-XX:MaxRAMPercentage=65", \
-    "-XX:InitialRAMPercentage=25", \
+    "-XX:MaxRAMPercentage=60", \
+    "-XX:InitialRAMPercentage=20", \
     "-XX:+UseSerialGC", \
     "-XX:+ExitOnOutOfMemoryError", \
-    "-jar", "app.jar"]
+    "-jar", \
+    "app.jar"]

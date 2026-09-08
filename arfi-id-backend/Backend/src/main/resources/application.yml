@@ -1,8 +1,7 @@
 spring:
   application:
     name: arfi-auth-service
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
+
   security:
     oauth2:
       client:
@@ -13,4 +12,4 @@ spring:
             scope: profile, email
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${PORT:8080}

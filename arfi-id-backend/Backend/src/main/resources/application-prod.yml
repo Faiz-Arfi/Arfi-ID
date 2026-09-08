@@ -10,8 +10,9 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
   docker:
     compose:
       enabled: false
