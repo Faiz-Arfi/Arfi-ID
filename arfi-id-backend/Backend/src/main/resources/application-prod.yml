@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}?sslmode=${DB_SSL_MODE:require}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  docker:
+    compose:
+      enabled: false
+jwt:
+  secret: ${JWT_SECRET}
+  # 5 Minutes for Access Token
+  access-expiration: 300000
+  # 7 Days for Refresh Token
+  refresh-expiration: 604800000
+
+frontend:
+  url: ${FRONTEND_URL}
+
+admin:
+  email: ${ADMIN_Email}
+  password: ${ADMIN_PASSWORD}

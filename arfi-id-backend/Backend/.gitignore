@@ -6,6 +6,7 @@ target/
 
 # all environment files
 *.env
+*.pem
 
 ### STS ###
 .apt_generated
