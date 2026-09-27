@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth/oauth")
 @RequiredArgsConstructor
@@ -50,5 +52,15 @@ public class OAuthController {
 
         OAuthTokenResponse response = oAuthService.exchangeCodeForToken(request, httpRequest);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutClientSession(
+            @RequestBody @Valid OAuthLogoutRequest request
+    ) {
+        log.info("Received logout request for client {}", request.clientId());
+
+        oAuthService.logoutClientSession(request);
+        return ResponseEntity.ok(Map.of("status", "success", "message", "Session revoked successfully"));
     }
 }

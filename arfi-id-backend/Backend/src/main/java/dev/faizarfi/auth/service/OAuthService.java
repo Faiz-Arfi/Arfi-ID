@@ -2,6 +2,7 @@ package dev.faizarfi.auth.service;
 
 import dev.faizarfi.auth.dto.*;
 import dev.faizarfi.auth.entity.*;
+import dev.faizarfi.auth.exception.AccountDisabledException;
 import dev.faizarfi.auth.exception.InvalidClientException;
 import dev.faizarfi.auth.repository.*;
 import jakarta.servlet.http.Cookie;
@@ -10,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,8 +27,12 @@ public class OAuthService {
 
     private static final long AUTH_CODE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
     private final ChildProjectJwtService childProjectJwtService;
+
     @Value("${jwt.refresh-expiration:604800000}")
     private Long refreshTokenValidity;
+    @Value("${jwt.access-expiration:300000}")
+    private int accessExpiration;
+
     private final ClientRepository clientRepository;
     private final UserRoleRepository userRoleRepository;
     private final AuthorizationCodeRepository authorizationCodeRepository;
@@ -42,16 +48,12 @@ public class OAuthService {
         Client client = clientRepository.findByClientId(clientId)
                 .orElseThrow(() -> new InvalidClientException("Invalid Client ID: " + clientId));
 
-        // Check if active
-        if(!client.isActive()) {
-            log.warn("Client {} is inactive", clientId);
-            throw new InvalidClientException("Client is not active: " + clientId);
-        }
-
-        // Validate redirect URI
-        if(!client.getRedirectUri().equals(redirectUri)) {
-            log.warn("Redirect URI {} does not match registered redirect URI {}", redirectUri, client.getRedirectUri());
-            throw new InvalidClientException("Invalid redirect URI: " + redirectUri);
+        // Check if client is valid
+        if(isValidClient(client, redirectUri)) {
+            log.info("Client {} is valid and active", clientId);
+        } else {
+            log.warn("Client {} is invalid or inactive", clientId);
+            throw new InvalidClientException("Client is not valid or inactive: " + clientId);
         }
 
         log.info("Client {} is valid", clientId);
@@ -120,13 +122,97 @@ public class OAuthService {
 
     @Transactional
     public OAuthTokenResponse exchangeCodeForToken(@Valid OAuthTokenRequest request, HttpServletRequest httpRequest) {
-        log.info("Received token exchange request for client {}", request.getClientId());
 
-        if (!"authorization_code".equals(request.getGrantType())) {
-            log.warn("Unsupported grant type: {}", request.getGrantType());
-            throw new RuntimeException("Unsupported grant type: " + request.getGrantType());
+        Client client = clientRepository.findByClientId(request.getClientId())
+                .orElseThrow(() -> new InvalidClientException("Invalid Client ID: " + request.getClientId()));
+
+        if (!passwordEncoder.matches(request.getClientSecret(), client.getClientSecret())) {
+            throw new BadCredentialsException("Invalid Client Secret for client: " + request.getClientId());
         }
 
+        if ("authorization_code".equals(request.getGrantType())) {
+            return handleAuthorizationCodeGrant(request, client, httpRequest);
+        } else if ("refresh_token".equals(request.getGrantType())) {
+            return handleRefreshTokenGrant(request, client);
+        } else {
+            throw new IllegalArgumentException("Unsupported grant type: " + request.getGrantType());
+        }
+
+    }
+
+    @Transactional
+    public void logoutClientSession(OAuthLogoutRequest request) {
+        Client client = clientRepository.findByClientId(request.clientId())
+                .orElseThrow(() -> new InvalidClientException("Invalid Client ID: " + request.clientId()));
+
+        if(!passwordEncoder.matches(request.clientSecret(), client.getClientSecret())) {
+            throw new BadCredentialsException("Invalid client secret");
+        }
+
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(request.refreshToken())
+                .orElse(null);
+
+        if(refreshToken != null) {
+            refreshToken.setRevoked(true);
+            refreshTokenRepository.save(refreshToken);
+            log.info("Revoked refresh token {} for client {}", request.refreshToken(), request.clientId());
+        }
+    }
+
+    private OAuthTokenResponse handleRefreshTokenGrant(OAuthTokenRequest request, Client client) {
+        //Fetch and validate refresh token
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(request.getRefreshToken())
+                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+
+        if (refreshToken.isRevoked() || refreshToken.getExpiryDate().isBefore(Instant.now())) {
+            log.warn("Refresh token {} is revoked or expired", request.getRefreshToken());
+            throw new RuntimeException("Refresh token is revoked or expired");
+        }
+
+        //Validate client binding
+        if (!refreshToken.getClient().getClientId().equals(client.getClientId())) {
+            log.error("Security alert: Refresh token bound to client ID {} attempted use by client ID {}",
+                    refreshToken.getClient().getClientId(), client.getClientId());
+            throw new RuntimeException("Refresh token does not belong to the specified client");
+        }
+
+        //Fetch and validate user status
+        User user = refreshToken.getUser();
+        if (!user.isEnabled()) {
+            throw new AccountDisabledException("User account is disabled: " + user.getEmail());
+        }
+
+        //Validate user's project role permissions
+        UserRole role = userRoleRepository.findByUserAndClient(user, client)
+                .orElseThrow(() -> new RuntimeException("No access to this project"));
+
+        if (role.isRevoked()) {
+            log.warn("Access to client {} revoked for user {}", client.getClientId(), user.getEmail());
+            throw new RuntimeException("Access to this client has been revoked by the user");
+        }
+
+        // Generate new short-lived access token signed with client secret
+        String accessToken = childProjectJwtService.generateAccessToken(
+                user.getEmail(),
+                client.getClientId(),
+                role.getRole(),
+                request.getClientSecret()
+        );
+
+        return OAuthTokenResponse.builder()
+                .tokenType("Bearer")
+                .accessToken(accessToken)
+                .refreshToken(refreshToken.getToken())
+                .expiresIn(accessExpiration / 1000)
+                .user(UserResponseDto.builder()
+                        .id(user.getId())
+                        .email(user.getEmail())
+                        .role(role.getRole())
+                        .build())
+                .build();
+    }
+
+    private OAuthTokenResponse handleAuthorizationCodeGrant(OAuthTokenRequest request, Client client, HttpServletRequest httpRequest) {
         AuthorizationCode authCode = authorizationCodeRepository.findByCode(request.getCode())
                 .orElseThrow(() -> new RuntimeException("Invalid authorization code: " + request.getCode()));
 
@@ -139,9 +225,6 @@ public class OAuthService {
             log.warn("Authorization code {} has expired", request.getCode());
             throw new RuntimeException("Authorization code has expired");
         }
-
-        Client client = clientRepository.findByClientId(request.getClientId())
-                .orElseThrow(() -> new InvalidClientException("Invalid Client ID: " + request.getClientId()));
 
         if(!passwordEncoder.matches(request.getClientSecret(), client.getClientSecret())) {
             log.warn("Invalid client secret for client {}", request.getClientId());
@@ -181,7 +264,7 @@ public class OAuthService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
-                .expiresIn((int) (AUTH_CODE_VALIDITY_MS/1000))
+                .expiresIn(accessExpiration/1000)
                 .user(UserResponseDto.builder()
                         .id(user.getId())
                         .email(user.getEmail())
@@ -277,4 +360,23 @@ public class OAuthService {
         log.debug("IP extracted from RemoteAddr: {}", remoteAddr);
         return remoteAddr;
     }
+
+    public boolean isValidClient(Client client, String redirectUri) {
+
+        String clientId = client.getClientId();
+        // Check if active
+        if(!client.isActive()) {
+            log.warn("Client {} is inactive", clientId);
+            throw new InvalidClientException("Client is not active: " + clientId);
+        }
+
+        // Validate redirect URI
+        if(redirectUri != null && !client.getRedirectUri().equals(redirectUri)) {
+            log.warn("Redirect URI {} does not match registered redirect URI {}", redirectUri, client.getRedirectUri());
+            throw new InvalidClientException("Invalid redirect URI: " + redirectUri);
+        }
+
+        return true;
+    }
+
 }
