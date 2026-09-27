@@ -21,7 +21,7 @@ public class ApplicationConfig {
                         .username(user.getEmail())
                         .password(user.getPassword())
                         // Spring expects "USER" instead of "ROLE_USER"
-                        .roles(user.getRole().replace("ROLE", ""))
+                        .roles(user.getRole())
                         .build())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }

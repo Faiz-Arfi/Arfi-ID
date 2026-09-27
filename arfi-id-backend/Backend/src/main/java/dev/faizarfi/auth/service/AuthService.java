@@ -119,7 +119,7 @@ public class AuthService {
         User user = User.builder()
                 .email(request.getEmail())
                 .password(hashedPassword)
-                .role("ROLE_USER") // Global System Role
+                .role("USER") // Global System Role
                 .isEnabled(true)
                 .build();
 
@@ -129,7 +129,7 @@ public class AuthService {
         UserRole projectRole = UserRole.builder()
                 .user(user)
                 .client(client)
-                .role("ROLE_USER")
+                .role("USER")
                 .build();
 
         userRoleRepository.save(projectRole);
@@ -164,7 +164,7 @@ public class AuthService {
         Client client = tokenEntity.getClient();
         String actualRole = userRoleRepository.findByUserAndClient(user, client)
                 .map(UserRole::getRole)
-                .orElse("ROLE_GUEST"); // if no role found, default to guest
+                .orElse("GUEST"); // if no role found, default to guest
         String newAccessToken = jwtService.generateAccessToken(user.getEmail(), client.getClientId(), actualRole);
 
         AuthResponse response = AuthResponse.builder()
@@ -235,7 +235,7 @@ public class AuthService {
     public AuthResponse adminLogin(@Valid LoginRequest request, HttpServletRequest httpRequest) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + request.getEmail()));
-        if(!Objects.equals(user.getRole(), "ROLE_ADMIN")) {
+        if(!Objects.equals(user.getRole(), "ADMIN")) {
             log.warn("Unauthorized admin login attempt for email: {}", request.getEmail());
             throw new AdminAccessDeniedException("Unauthorized: Not an admin user");
         }

@@ -55,7 +55,7 @@ public class DataSeeder implements CommandLineRunner {
             User admin = User.builder()
                     .email(adminUsername)
                     .password(passwordEncoder.encode(adminPassword))
-                    .role("ROLE_ADMIN")
+                    .role("ADMIN")
                     .isEnabled(true)
                     .build();
             userRepository.save(admin);
@@ -64,7 +64,7 @@ public class DataSeeder implements CommandLineRunner {
             UserRole projectRole = UserRole.builder()
                     .user(admin)
                     .client(client)
-                    .role("ROLE_ADMIN")
+                    .role("ADMIN")
                     .build();
             userRoleRepository.save(projectRole);
             log.info("SEED DATA : Admin user created");
