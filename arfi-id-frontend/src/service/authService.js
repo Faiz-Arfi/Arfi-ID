@@ -32,7 +32,7 @@ export const validateOAuthClient = async (clientId, redirectUri) => {
             redirectUri
         }
     });
-    return response.data;
+    return response.data.data;
 };
 
 export const authorizeOAuth = async (clientId, redirectUri, state) => {
@@ -41,10 +41,10 @@ export const authorizeOAuth = async (clientId, redirectUri, state) => {
         redirectUri,
         state
     });
-    return response.data;
+    return response.data.data;
 };
 
 export const exchangeOAuthToken = async (tokenRequest) => {
     const response = await api.post('/auth/oauth/token', tokenRequest);
-    return response.data;
+    return response.data.data;
 };
