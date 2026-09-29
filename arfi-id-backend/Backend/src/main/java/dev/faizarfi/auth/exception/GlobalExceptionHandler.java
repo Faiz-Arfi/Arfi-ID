@@ -1,6 +1,7 @@
 package dev.faizarfi.auth.exception;
 
 import dev.faizarfi.auth.dto.ApiErrorResponse;
+import dev.faizarfi.auth.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
@@ -68,6 +69,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(JWTExpiredException.class)
     public ResponseEntity<ApiErrorResponse> handleJWTExpirationError(JWTExpiredException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidAuthorizationRequestException.class)
+    public ResponseEntity<ApiResponse<Object>> handleInvalidAuthorizationCodeException(InvalidAuthorizationRequestException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .badRequest()
+                .body(ApiResponse.fail(null, ex.getMessage(), request.getRequestURI(), HttpStatus.BAD_REQUEST.value()));
     }
 
     @ExceptionHandler(Exception.class)

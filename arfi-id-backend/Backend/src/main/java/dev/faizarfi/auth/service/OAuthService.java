@@ -3,6 +3,7 @@ package dev.faizarfi.auth.service;
 import dev.faizarfi.auth.dto.*;
 import dev.faizarfi.auth.entity.*;
 import dev.faizarfi.auth.exception.AccountDisabledException;
+import dev.faizarfi.auth.exception.InvalidAuthorizationRequestException;
 import dev.faizarfi.auth.exception.InvalidClientException;
 import dev.faizarfi.auth.repository.*;
 import jakarta.servlet.http.Cookie;
@@ -214,40 +215,40 @@ public class OAuthService {
 
     private OAuthTokenResponse handleAuthorizationCodeGrant(OAuthTokenRequest request, Client client, HttpServletRequest httpRequest) {
         AuthorizationCode authCode = authorizationCodeRepository.findByCode(request.getCode())
-                .orElseThrow(() -> new RuntimeException("Invalid authorization code: " + request.getCode()));
+                .orElseThrow(() -> new InvalidAuthorizationRequestException("Invalid authorization code: "));
 
         if(authCode.isUsed()) {
             log.warn("Authorization code {} has already been used", request.getCode());
-            throw new RuntimeException("Authorization code has already been used");
+            throw new InvalidAuthorizationRequestException("Authorization code has already been used");
         }
 
         if(authCode.getExpiryDate().isBefore(Instant.now())) {
             log.warn("Authorization code {} has expired", request.getCode());
-            throw new RuntimeException("Authorization code has expired");
+            throw new InvalidAuthorizationRequestException("Authorization code has expired");
         }
 
         if(!passwordEncoder.matches(request.getClientSecret(), client.getClientSecret())) {
             log.warn("Invalid client secret for client {}", request.getClientId());
-            throw new RuntimeException("Invalid client secret");
+            throw new InvalidAuthorizationRequestException("Invalid client secret");
         }
 
         if(!authCode.getRedirectUri().equals(request.getRedirectUri())) {
             log.warn("Redirect URI {} does not match registered redirect URI {}", request.getRedirectUri(), authCode.getRedirectUri());
-            throw new RuntimeException("Invalid redirect URI");
+            throw new InvalidAuthorizationRequestException("Invalid redirect URI");
         }
 
         if(!authCode.getClient().getClientId().equals(request.getClientId())) {
             log.warn("Client ID {} does not match registered client ID {}", request.getClientId(), authCode.getClient().getClientId());
-            throw new RuntimeException("Client ID mismatch");
+            throw new InvalidAuthorizationRequestException("Client ID mismatch");
         }
 
         User user = authCode.getUser();
         UserRole userRole = userRoleRepository.findByUserAndClient(user, client)
-                .orElseThrow(() -> new RuntimeException("No access to this project"));
+                .orElseThrow(() -> new InvalidAuthorizationRequestException("No access to this project"));
 
         if (userRole.isRevoked()) {
             log.warn("Access to client {} revoked for user {}", request.getClientId(), user.getEmail());
-            throw new RuntimeException("Access to this client has been revoked by the user");
+            throw new InvalidAuthorizationRequestException("Access to this client has been revoked by the user");
         }
 
         authCode.setUsed(true);
